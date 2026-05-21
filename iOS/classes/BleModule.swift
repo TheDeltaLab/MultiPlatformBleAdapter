@@ -375,17 +375,15 @@ public class BleClientManager : NSObject {
             return
         }
 
-        var timeout: Int? = nil
+        let timeout = options?["timeout"] as? Int
+        let enableTransportBridging = (options?["enableTransportBridging"] as? Bool) ?? false
 
-        if let options = options {
-            timeout = options["timeout"] as? Int
-        }
-
-        safeConnectToDevice(deviceId, timeout: timeout, promise: SafePromise(resolve: resolve, reject: reject))
+        safeConnectToDevice(deviceId, timeout: timeout, enableTransportBridging: enableTransportBridging, promise: SafePromise(resolve: resolve, reject: reject))
     }
 
     private func safeConnectToDevice(_ deviceId: UUID,
                                         timeout: Int?,
+                                        enableTransportBridging: Bool,
                                         promise: SafePromise) {
 
         var peripheral: Peripheral? = nil
@@ -397,7 +395,9 @@ public class BleClientManager : NSObject {
                 peripheral = device
                 return Observable.just(device)
             }
-            .flatMap { $0.connect() }
+            .flatMap { $0.connect(options: [
+                CBConnectPeripheralOptionEnableTransportBridgingKey as String: enableTransportBridging as AnyObject
+            ]) }
 
         if let timeout = timeout {
             let timeoutInterval = RxTimeInterval.milliseconds(Int(timeout))
